@@ -23,8 +23,13 @@ import {
 import { buildDistrict } from './district.js';
 import { loadCarModel } from './models.js';
 
-const CAR_MODEL_URL = 'assets/models/ferrari.glb';
-let carTemplate = null; // načtený 3D model auta (nebo null → záložní kvádr)
+// Modely aut: klíč = druh vozidla. Zdroje a licence jsou v assets/models/README.md.
+const CAR_MODELS = {
+  ferrari: { url: 'assets/models/ferrari.glb', targetLength: 4.6 },
+  toycar: { url: 'assets/models/toycar.glb', targetLength: 4.0, frontIsPlusZ: true, exclude: ['Fabric'] },
+  milktruck: { url: 'assets/models/milktruck.glb', targetLength: 6.5, frontIsPlusZ: true },
+};
+const carTemplates = {}; // načtené modely (klíč = druh); chybějící → záložní kvádr
 
 const CAR_RADIUS = 1.6;
 const MAX_HEALTH = 100;
@@ -88,8 +93,9 @@ let playerMesh = null;
 const coinGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 14);
 const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: 0.9, roughness: 0.3, emissive: 0x332200 });
 
-function makeCarMesh(color, withLightBar = false) {
+function makeCarMesh(color, withLightBar = false, kind = 'ferrari') {
   const group = new THREE.Group();
+  const carTemplate = carTemplates[kind] ?? carTemplates.ferrari ?? null;
   if (carTemplate) {
     // Sdílená síť: klon nekopíruje geometrii ani materiály
     const model = carTemplate.clone(false);
@@ -132,6 +138,7 @@ function newState(spawn) {
   // Doprava: auta jedou po reálných silnicích
   const drivable = district.roads.filter((r) => r.width >= 6);
   traffic = [];
+  const KINDS = ['ferrari', 'toycar', 'milktruck'];
   for (let i = 0; i < TRAFFIC_COUNT && drivable.length; i++) {
     const road = drivable[Math.floor(rand() * drivable.length)];
     traffic.push({
@@ -139,7 +146,7 @@ function newState(spawn) {
       s: rand() * 500,
       dir: rand() < 0.5 ? 1 : -1,
       speed: 6 + rand() * 6,
-      mesh: makeCarMesh([0xe9edf2, 0x2b59c3, 0xc0392b, 0x2ecc71][i % 4]),
+      mesh: makeCarMesh(0xffffff, false, KINDS[i % KINDS.length]),
     });
   }
   return {
@@ -380,11 +387,17 @@ requestAnimationFrame((t) => {
 });
 
 // ?nomodel=1 vypne 3D model (rychlé testy na slabém GPU); bez něj je záložní kvádr
-const carLoad = (params.get('nomodel') ? Promise.resolve(null) : loadCarModel(CAR_MODEL_URL))
-  .then((model) => {
-    carTemplate = model;
-  })
-  .catch((err) => console.warn('Model auta se nenačetl, používám záložní tvar:', err));
+const carLoad = Promise.all(
+  Object.entries(CAR_MODELS).map(([kind, cfg]) =>
+    params.get('nomodel')
+      ? null
+      : loadCarModel(cfg.url, cfg)
+          .then((model) => {
+            carTemplates[kind] = model;
+          })
+          .catch((err) => console.warn(`Model ${kind} se nenačetl, používám záložní tvar:`, err)),
+  ),
+);
 
 Promise.all([loadDistrict(), carLoad])
   .then(([{ district: d, source }]) => {
@@ -404,7 +417,7 @@ Promise.all([loadDistrict(), carLoad])
 // Pro testy a ladění
 window.__praha = {
   get carModelLoaded() {
-    return carTemplate !== null;
+    return Boolean(carTemplates.ferrari);
   },
   get state() {
     return state;

@@ -6,11 +6,12 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /** Sloučí všechny meshe modelu do jedné sítě s více materiály (jeden materiál = jedno vykreslení). */
-export function flattenModel(root) {
+export function flattenModel(root, exclude = []) {
   root.updateMatrixWorld(true);
   const byMaterial = new Map();
   root.traverse((o) => {
     if (!o.isMesh) return;
+    if (exclude.includes(o.name)) return;
     const mat = Array.isArray(o.material) ? o.material[0] : o.material;
     const g = o.geometry.clone();
     g.applyMatrix4(o.matrixWorld);
@@ -41,16 +42,18 @@ export function flattenModel(root) {
  * Vrátí Mesh s modelem auta: délka ~targetLength metrů (osa -z = směr jízdy),
  * spodní hrana na y=0, střed v počátku. Další auta vznikají jako sdílené kopie.
  */
-export async function loadCarModel(url, targetLength = 4.6) {
+export async function loadCarModel(url, { targetLength = 4.6, frontIsPlusZ = false, exclude = [] } = {}) {
   const draco = new DRACOLoader();
   draco.setDecoderPath('./node_modules/three/examples/jsm/libs/draco/');
   const loader = new GLTFLoader();
   loader.setDRACOLoader(draco);
   const gltf = await loader.loadAsync(url);
 
-  const mesh = flattenModel(gltf.scene);
+  const mesh = flattenModel(gltf.scene, exclude);
   const probe = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
   if (probe.x > probe.z) mesh.rotation.y = Math.PI / 2;
+  // Většina GLB modelů má přední část na +z; hra počítá s přední částí na -z.
+  if (frontIsPlusZ) mesh.rotation.y += Math.PI;
 
   const size = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
   mesh.scale.setScalar(targetLength / Math.max(size.x, size.z));
