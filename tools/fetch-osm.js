@@ -9,10 +9,10 @@ import osmtogeojson from 'osmtogeojson';
 export const BBOX = '50.0790,14.4000,50.0960,14.4330'; // jih, západ, sever, východ
 
 export function overpassQuery(bbox = BBOX) {
-  return `[out:json][timeout:180];
+  return `[out:json][timeout:90];
 (
   way["building"](${bbox});
-  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|service|pedestrian|footway|cycleway|path|steps)$"](${bbox});
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|service|pedestrian)$"](${bbox});
   way["waterway"="river"](${bbox});
   way["natural"="water"](${bbox});
   relation["building"]["type"="multipolygon"](${bbox});
@@ -29,22 +29,31 @@ export function overpassToGeoJSON(overpassJson) {
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.openstreetmap.ru/api/interpreter',
 ];
+const ATTEMPTS_PER_ENDPOINT = 3;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchOverpass(query) {
   let lastError;
   for (const url of ENDPOINTS) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ data: query }),
-      });
-      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      lastError = err;
-      console.warn(`Selhalo: ${err.message}, zkouším další server…`);
+    for (let attempt = 1; attempt <= ATTEMPTS_PER_ENDPOINT; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ data: query }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        // Overpass může vrátit 200 s chybou v poli remark (např. timeout)
+        if (json.remark && !json.elements?.length) throw new Error(`Overpass: ${json.remark}`);
+        return json;
+      } catch (err) {
+        lastError = err;
+        console.warn(`${url} (pokus ${attempt}/${ATTEMPTS_PER_ENDPOINT}): ${err.message}`);
+        await sleep(5000 * attempt);
+      }
     }
   }
   throw lastError;
