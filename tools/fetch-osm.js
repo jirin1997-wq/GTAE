@@ -30,6 +30,7 @@ const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.openstreetmap.ru/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
 ];
 const ATTEMPTS_PER_ENDPOINT = 3;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -44,7 +45,10 @@ async function fetchOverpass(query) {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({ data: query }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          const body = (await res.text()).slice(0, 200).replace(/\s+/g, ' ');
+          throw new Error(`HTTP ${res.status} – ${body}`);
+        }
         const json = await res.json();
         // Overpass může vrátit 200 s chybou v poli remark (např. timeout)
         if (json.remark && !json.elements?.length) throw new Error(`Overpass: ${json.remark}`);
