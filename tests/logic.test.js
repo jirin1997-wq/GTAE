@@ -41,7 +41,7 @@ test('zatáčení změní yaw jen při pohybu', () => {
   const moving = createCar(0, 0, 0);
   moving.speed = 15;
   stepCar(moving, { throttle: 0, steer: 1 }, 0.5);
-  assert.ok(moving.yaw > 0);
+  assert.ok(moving.yaw < 0);
 });
 
 test('auto zůstane uvnitř světa', () => {
@@ -100,3 +100,17 @@ test('mulberry32 je deterministický', () => {
   for (let i = 0; i < 20; i++) assert.equal(a(), b());
 });
 
+
+test('D (steer +1) při jízdě na sever zatáčí doprava, tedy na +x', () => {
+  const c = createCar(0, 0, 0);
+  c.speed = 15;
+  for (let i = 0; i < 60; i++) stepCar(c, { throttle: 1, steer: 1 }, 1 / 60);
+  assert.ok(c.x > 1, `x ${c.x}`);
+});
+
+test('A (steer -1) při jízdě na sever zatáčí doleva, tedy na -x', () => {
+  const c = createCar(0, 0, 0);
+  c.speed = 15;
+  for (let i = 0; i < 60; i++) stepCar(c, { throttle: 1, steer: -1 }, 1 / 60);
+  assert.ok(c.x < -1, `x ${c.x}`);
+});

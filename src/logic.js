@@ -25,7 +25,9 @@ export function stepCar(car, input, dt) {
 
   // Zatáčení je silnější při vyšší rychlosti a obrací se při couvání.
   const turnRate = 1.8 * Math.min(1, Math.abs(car.speed) / 8);
-  car.yaw += input.steer * turnRate * Math.sign(car.speed || 1) * dt;
+  // Směr jízdy je (-sin yaw, -cos yaw): zvýšení yaw znamená odbočku doleva,
+  // proto je zatáčení invertované (steer > 0 = doprava).
+  car.yaw -= input.steer * turnRate * Math.sign(car.speed || 1) * dt;
 
   car.x += -Math.sin(car.yaw) * car.speed * dt;
   car.z += -Math.cos(car.yaw) * car.speed * dt;
