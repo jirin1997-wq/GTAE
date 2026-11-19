@@ -1,0 +1,19 @@
+{
+  "name": "praha-drive",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Akční hra v prohlížeči v omezené oblasti reálné Prahy (data z OpenStreetMap)",
+  "type": "module",
+  "scripts": {
+    "start": "node tests/serve.js",
+    "make-sample": "node tools/make-sample.js",
+    "lint": "node --check src/logic.js && node --check src/geo.js && node --check src/district.js && node --check src/main.js && node --check tools/make-sample.js && node --check tests/serve.js && node --check tests/smoke.js && node --check tests/logic.test.js && node --check tests/geo.test.js && node --check tools/fetch-osm.js && node --check tests/fetch-osm.test.js",
+    "test": "npm run lint && node --test tests/logic.test.js tests/geo.test.js tests/fetch-osm.test.js",
+    "smoke": "node tests/smoke.js",
+    "fetch-osm": "node tools/fetch-osm.js"
+  },
+  "dependencies": {
+    "osmtogeojson": "^3.0.0-beta.5",
+    "three": "0.160.0"
+  }
+}

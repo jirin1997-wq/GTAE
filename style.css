@@ -1,0 +1,193 @@
+:root {
+  --sky: #f6b7a0;
+  --ink: #1d1420;
+  --panel: rgba(29, 20, 32, 0.72);
+  --text: #fff7f0;
+  --accent: #ffd166;
+  --danger: #ef476f;
+  --ok: #06d6a0;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--sky);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  pointer-events: none;
+}
+
+.hud.top {
+  top: 0;
+}
+
+.hud.bottom {
+  bottom: 0;
+  align-items: flex-end;
+  padding-bottom: 150px; /* místo pro dotykové ovládání */
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.pill {
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  backdrop-filter: blur(4px);
+}
+
+.pill strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.stars {
+  color: var(--danger);
+  letter-spacing: 2px;
+}
+
+.health {
+  width: min(220px, 60vw);
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(29, 20, 32, 0.6);
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--danger), var(--accent), var(--ok));
+  transition: width 0.15s linear;
+}
+
+.speed {
+  margin-top: 6px;
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
+}
+
+.toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  background: var(--panel);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.help {
+  position: fixed;
+  bottom: 6px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: rgba(255, 247, 240, 0.85);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.touch {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.touch .steer,
+.touch .pedals {
+  display: flex;
+  gap: 10px;
+}
+
+.touch button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 247, 240, 0.4);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1.3rem;
+  touch-action: none;
+}
+
+.touch button:active {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+/* Dotykové ovládání jen na zařízeních s dotykem, na počítači se skryje. */
+@media (hover: hover) and (pointer: fine) {
+  .touch {
+    display: none;
+  }
+  .hud.bottom {
+    padding-bottom: 40px;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.source {
+  position: fixed;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(90vw, 460px);
+  text-align: center;
+  background: rgba(239, 71, 111, 0.85);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  pointer-events: none;
+}

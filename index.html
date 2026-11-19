@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Akční hra v prohlížeči v omezené oblasti reálné Prahy: řiď, sbírej koruny, uteč policii.">
+  <title>Praha Drive – hra v prohlížeči</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Pokud se hra nespustí (typicky při otevření souboru přímo, bez serveru), ukaž návod.
+    setTimeout(function () {
+      if (document.body.dataset.app === 'running') return;
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:#f2b8a2;color:#1d1420;font:16px system-ui,sans-serif;text-align:center;z-index:10';
+      box.innerHTML = '<div style="max-width:460px"><h2 style="margin:0 0 12px">Hra se nespustila</h2>' +
+        '<p>Neotevírej soubor <code>index.html</code> dvojklikem. Ve složce projektu spusť <code>npm start</code> a otevři <b>http://localhost:8080</b>.</p>' +
+        '<p>Pokud to nepomůže, otevři konzoli prohlížeče (Cmd+Option+J na Macu) a pošli výpis chyby.</p></div>';
+      document.body.appendChild(box);
+    }, 3000);
+  </script>
+  <script type="importmap">
+    { "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    } }
+  </script>
+</head>
+<body data-status="playing" data-coins="0" data-wanted="0" data-health="100">
+  <canvas id="scene" aria-label="Pohled z auta na Prahu"></canvas>
+
+  <header class="hud top">
+    <div class="pill">Koruny <strong id="coins">0</strong></div>
+    <div class="pill">Hledání <span id="wanted" class="stars">☆☆☆☆☆</span></div>
+  </header>
+
+  <div class="hud bottom">
+    <div class="health" aria-label="Zdraví auta">
+      <div id="health" class="health-fill"></div>
+    </div>
+    <div class="speed"><span id="speed">0</span> km/h</div>
+  </div>
+
+  <p id="message" class="toast" role="status" aria-live="polite"></p>
+  <p id="source" class="source" hidden>Ukázková mapa – není to reálná Praha. Přidej data/praha.geojson (viz data/README.md).</p>
+
+  <div class="touch" aria-label="Ovládání dotykem">
+    <div class="steer">
+      <button type="button" data-key="ArrowLeft" aria-label="Doleva">◀</button>
+      <button type="button" data-key="ArrowRight" aria-label="Doprava">▶</button>
+    </div>
+    <div class="pedals">
+      <button type="button" data-key="ArrowDown" aria-label="Brzda / couvání">■</button>
+      <button type="button" data-key="ArrowUp" aria-label="Plyn">▲</button>
+    </div>
+  </div>
+
+  <p class="help">Ovládání: W/↑ plyn, S/↓ brzda a couvání, A/D nebo ←/→ zatáčení, R nová hra po nehodě.</p>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

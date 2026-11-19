@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "building": "yes", "height": "20" },
+      "geometry": { "type": "Polygon", "coordinates": [[[14.4200,50.0870],[14.4204,50.0870],[14.4204,50.0874],[14.4200,50.0874],[14.4200,50.0870]]] } },
+    { "type": "Feature", "properties": { "building": "apartments", "building:levels": "5" },
+      "geometry": { "type": "Polygon", "coordinates": [[[14.4230,50.0880],[14.4234,50.0880],[14.4234,50.0884],[14.4230,50.0884],[14.4230,50.0880]]] } },
+    { "type": "Feature", "properties": { "highway": "primary" },
+      "geometry": { "type": "LineString", "coordinates": [[14.4180,50.0860],[14.4220,50.0860],[14.4260,50.0860]] } },
+    { "type": "Feature", "properties": { "highway": "residential" },
+      "geometry": { "type": "LineString", "coordinates": [[14.4208,50.0850],[14.4208,50.0900]] } },
+    { "type": "Feature", "properties": { "waterway": "river" },
+      "geometry": { "type": "LineString", "coordinates": [[14.4150,50.0820],[14.4150,50.0930]] } }
+  ]
+}
