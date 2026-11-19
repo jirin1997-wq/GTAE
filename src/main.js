@@ -21,10 +21,14 @@ import {
   pickupsOnRoads,
 } from './geo.js';
 import { buildDistrict } from './district.js';
+import { loadCarModel } from './models.js';
+
+const CAR_MODEL_URL = 'assets/models/ferrari.glb';
+let carTemplate = null; // načtený 3D model auta (nebo null → záložní kvádr)
 
 const CAR_RADIUS = 1.6;
 const MAX_HEALTH = 100;
-const TRAFFIC_COUNT = 14;
+const TRAFFIC_COUNT = 6;
 const DEFAULT_DATA = 'data/praha.geojson';
 const FALLBACK_DATA = 'data/sample-district.geojson';
 
@@ -50,7 +54,7 @@ const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
 
 const sun = new THREE.DirectionalLight(0xffd7a8, 2.2);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -220, right: 220, top: 220, bottom: -220, near: 1, far: 800 });
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
@@ -80,13 +84,21 @@ const coinMeshes = new Map();
 const policeMeshes = [];
 const keys = new Set();
 
-const playerMesh = makeCarMesh(0xff7b54);
-scene.add(playerMesh);
+let playerMesh = null;
 const coinGeom = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 14);
 const coinMat = new THREE.MeshStandardMaterial({ color: 0xffd166, metalness: 0.9, roughness: 0.3, emissive: 0x332200 });
 
-function makeCarMesh(color) {
+function makeCarMesh(color, withLightBar = false) {
   const group = new THREE.Group();
+  if (carTemplate) {
+    // Sdílená síť: klon nekopíruje geometrii ani materiály
+    const model = carTemplate.clone(false);
+    model.castShadow = withLightBar; // dopravní auta bez stínů (úspora vykreslování)
+    group.add(model);
+    if (withLightBar) group.add(makeLightBar());
+    return group;
+  }
+  // Záložní kvádr, kdyby se model nenačetl
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(2.2, 0.9, 4.4),
     new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.3 }),
@@ -100,7 +112,18 @@ function makeCarMesh(color) {
   );
   cabin.position.set(0, 1.6, -0.2);
   group.add(cabin);
+  if (withLightBar) group.add(makeLightBar());
   return group;
+}
+
+function makeLightBar() {
+  const bar = new THREE.Group();
+  const red = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.3), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 1.5 }));
+  const blue = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.3), new THREE.MeshStandardMaterial({ color: 0x2040ff, emissive: 0x2040ff, emissiveIntensity: 1.5 }));
+  red.position.set(-0.35, 2.1, -0.4);
+  blue.position.set(0.35, 2.1, -0.4);
+  bar.add(red, blue);
+  return bar;
 }
 
 function newState(spawn) {
@@ -135,6 +158,8 @@ function newState(spawn) {
 
 // ---------- Synchronizace meshů ----------
 function syncMeshes() {
+  if (!playerMesh) playerMesh = makeCarMesh(0xff7b54);
+  if (!playerMesh.parent) scene.add(playerMesh);
   playerMesh.position.set(state.car.x, 0, state.car.z);
   playerMesh.rotation.y = state.car.yaw;
 
@@ -146,13 +171,7 @@ function syncMeshes() {
   }
 
   while (policeMeshes.length < state.police.length) {
-    const m = makeCarMesh(0x1e3a8a);
-    const stripe = new THREE.Mesh(
-      new THREE.BoxGeometry(2.25, 0.25, 4.5),
-      new THREE.MeshStandardMaterial({ color: 0xffffff }),
-    );
-    stripe.position.y = 1.2;
-    m.add(stripe);
+    const m = makeCarMesh(0x1e3a8a, true);
     scene.add(m);
     policeMeshes.push(m);
   }
@@ -360,8 +379,15 @@ requestAnimationFrame((t) => {
   frame(t);
 });
 
-loadDistrict()
-  .then(({ district: d, source }) => {
+// ?nomodel=1 vypne 3D model (rychlé testy na slabém GPU); bez něj je záložní kvádr
+const carLoad = (params.get('nomodel') ? Promise.resolve(null) : loadCarModel(CAR_MODEL_URL))
+  .then((model) => {
+    carTemplate = model;
+  })
+  .catch((err) => console.warn('Model auta se nenačetl, používám záložní tvar:', err));
+
+Promise.all([loadDistrict(), carLoad])
+  .then(([{ district: d, source }]) => {
     district = d;
     district.source = source;
     buildDistrict(scene, district);
@@ -377,6 +403,9 @@ loadDistrict()
 
 // Pro testy a ladění
 window.__praha = {
+  get carModelLoaded() {
+    return carTemplate !== null;
+  },
   get state() {
     return state;
   },

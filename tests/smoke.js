@@ -25,7 +25,7 @@ async function simWait(page, seconds) {
 }
 const attr = (page, name) => page.getAttribute('body', `data-${name}`);
 
-async function runChecks(browser, baseUrl, label, options) {
+async function runChecks(browser, baseUrl, label, options, query = '?nomodel=1') {
   const context = await browser.newContext(options);
   const page = await context.newPage();
   const errors = [];
@@ -37,7 +37,7 @@ async function runChecks(browser, baseUrl, label, options) {
   });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 
-  await page.goto(baseUrl, { waitUntil: 'load' });
+  await page.goto(baseUrl + query, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__praha && document.body.dataset.status, null, { timeout: 15000 });
 
   check(`[${label}] český titulek`, (await page.title()).includes('Praha'));
@@ -87,6 +87,24 @@ async function runChecks(browser, baseUrl, label, options) {
   await context.close();
 }
 
+// Samostatná kontrola 3D modelu: načte se, vykreslí se a nevznikne chyba.
+// Bez herní simulace, protože vykreslení modelu je v headless prohlížeči pomalé.
+async function runModelCheck(browser, baseUrl) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  await page.goto(baseUrl, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__praha && window.__praha.state, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__praha.carModelLoaded, null, { timeout: 180000 }).catch(() => {});
+  check('[model] 3D model auta je načtený', await page.evaluate(() => window.__praha.carModelLoaded));
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: path.join(SHOTS, 'model.png') });
+  check('[model] žádné chyby při načtení modelu', errors.length === 0, errors.join(' | '));
+  await context.close();
+}
+
 async function main() {
   let server = null;
   let baseUrl = process.env.SMOKE_URL;
@@ -97,6 +115,7 @@ async function main() {
   try {
     await runChecks(browser, baseUrl, 'desktop', { viewport: { width: 1280, height: 800 } });
     await runChecks(browser, baseUrl, 'mobil', { ...devices['iPhone 13'] });
+    await runModelCheck(browser, baseUrl);
   } finally {
     await browser.close();
     if (server) server.close();
