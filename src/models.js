@@ -65,3 +65,22 @@ export async function loadCarModel(url, { targetLength = 4.6, frontIsPlusZ = fal
   mesh.receiveShadow = true;
   return mesh;
 }
+
+/**
+ * Načte model člověka (skinned, s animací chůze). Výška ~targetHeight, nohy na y=0,
+ * přední část na -z (frontIsPlusZ otočí model). Animace je v userData.clip.
+ */
+export async function loadHumanModel(url, { targetHeight = 1.75, frontIsPlusZ = true } = {}) {
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync(url);
+  const group = new THREE.Group();
+  group.add(gltf.scene);
+  if (frontIsPlusZ) gltf.scene.rotation.y = Math.PI;
+  const size = new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
+  group.scale.setScalar(targetHeight / size.y);
+  const box = new THREE.Box3().setFromObject(group);
+  const center = box.getCenter(new THREE.Vector3());
+  group.position.set(-center.x, -box.min.y, -center.z);
+  group.userData.clip = gltf.animations[0] ?? null;
+  return group;
+}

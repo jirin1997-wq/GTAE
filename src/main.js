@@ -21,7 +21,9 @@ import {
   pickupsOnRoads,
 } from './geo.js';
 import { buildDistrict } from './district.js';
-import { loadCarModel } from './models.js';
+import { loadCarModel, loadHumanModel } from './models.js';
+import { createCrowd, stepCrowd, collideCrowd } from './crowd.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 // Modely aut: klíč = druh vozidla. Zdroje a licence jsou v assets/models/README.md.
 const CAR_MODELS = {
@@ -29,6 +31,9 @@ const CAR_MODELS = {
   toycar: { url: 'assets/models/toycar.glb', targetLength: 4.0, frontIsPlusZ: true, exclude: ['Fabric'] },
   milktruck: { url: 'assets/models/milktruck.glb', targetLength: 6.5, frontIsPlusZ: true },
 };
+const HUMAN_URL = 'assets/models/cesiumman.glb';
+let humanTemplate = null;
+let crowd = [];
 const carTemplates = {}; // načtené modely (klíč = druh); chybějící → záložní kvádr
 
 const CAR_RADIUS = 1.6;
@@ -269,6 +274,12 @@ function update(dt) {
   state.coins += collectPickups(state.car, state.pickups, 2.5);
   updateTraffic(dt);
   updatePolice(dt);
+  stepCrowd(crowd, dt);
+  const hits = collideCrowd(state.car, crowd);
+  if (hits > 0) {
+    state.crime += 10 * hits;
+    state.health -= 5 * hits;
+  }
 
   if (state.police.length === 0 && state.crime > 0) {
     state.crime = Math.max(0, state.crime - 2 * dt);
@@ -278,6 +289,12 @@ function update(dt) {
     state.health = 0;
     state.status = 'wrecked';
   }
+}
+
+// Účastníci (chodci, cyklisté) se musí aktualizovat i mimo update (animace), proto v frame()
+function animateCrowd(dt) {
+  if (state && state.status === 'playing') return; // už se řeší v update()
+  stepCrowd(crowd, dt);
 }
 
 // ---------- HUD ----------
@@ -338,6 +355,7 @@ function frame(now) {
   last = now;
   if (state) {
     update(dt);
+    animateCrowd(dt);
     syncMeshes();
     updateCamera();
     updateHud();
@@ -387,6 +405,12 @@ requestAnimationFrame((t) => {
 });
 
 // ?nomodel=1 vypne 3D model (rychlé testy na slabém GPU); bez něj je záložní kvádr
+const humanLoad = (params.get('nomodel') ? Promise.resolve(null) : loadHumanModel(HUMAN_URL))
+  .then((model) => {
+    humanTemplate = model;
+  })
+  .catch((err) => console.warn('Model člověka se nenačetl, chodci nebudou:', err));
+
 const carLoad = Promise.all(
   Object.entries(CAR_MODELS).map(([kind, cfg]) =>
     params.get('nomodel')
@@ -400,10 +424,18 @@ const carLoad = Promise.all(
 );
 
 Promise.all([loadDistrict(), carLoad])
-  .then(([{ district: d, source }]) => {
+  .then(async ([{ district: d, source }]) => {
+    await humanLoad;
     district = d;
     district.source = source;
     buildDistrict(scene, district);
+    crowd = createCrowd({
+      scene,
+      district,
+      human: humanTemplate,
+      rand: mulberry32(99),
+      SkeletonUtils,
+    });
     state = newState(findSpawn(district));
     if (source === 'sample') {
       el.source.hidden = false;

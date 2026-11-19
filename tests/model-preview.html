@@ -29,7 +29,7 @@ scene.add(root);
 const d = 7;
 // pohled ze strany +z (kamera na +z), potom ze strany -z
 const view = params.get('view') === 'back' ? -1 : 1;
-camera.position.set(d * 0.5, 2.5, view * d);
+camera.position.set(params.get('view') === 'side' ? d : d * 0.5, 2.5, params.get('view') === 'side' ? 0 : view * d);
 camera.lookAt(0, 0.5, 0);
 renderer.render(scene, camera);
 document.title = 'ok';
