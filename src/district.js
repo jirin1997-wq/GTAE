@@ -58,6 +58,8 @@ export function ribbonGeometry(points, width, y = 0.02) {
   }
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  // stejné atributy jako ShapeGeometry (jinak mergeGeometries vrátí null)
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((positions.length / 3) * 2), 2));
   geom.setIndex(indices);
   geom.computeVertexNormals();
   return geom;
@@ -127,8 +129,9 @@ export function buildDistrict(scene, district) {
   for (const w of district.waterways) {
     waterGeoms.push(ribbonGeometry(w.points, w.width, 0.01));
   }
-  if (waterGeoms.length) {
-    const mesh = new THREE.Mesh(mergeGeometries(waterGeoms, false), waterMat);
+  const waterMerged = waterGeoms.length ? mergeGeometries(waterGeoms, false) : null;
+  if (waterMerged) {
+    const mesh = new THREE.Mesh(waterMerged, waterMat);
     mesh.receiveShadow = true;
     group.add(mesh);
   }

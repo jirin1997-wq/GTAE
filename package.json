@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node tests/serve.js",
     "make-sample": "node tools/make-sample.js",
-    "lint": "node --check src/logic.js && node --check src/geo.js && node --check src/district.js && node --check src/main.js && node --check tools/make-sample.js && node --check tests/serve.js && node --check tests/smoke.js && node --check tests/logic.test.js && node --check tests/geo.test.js && node --check tools/fetch-osm.js && node --check tests/fetch-osm.test.js && node --check src/crowd.js && node --check tests/crowd.test.js",
-    "test": "npm run lint && node --test tests/logic.test.js tests/geo.test.js tests/fetch-osm.test.js tests/crowd.test.js",
+    "lint": "node --check src/logic.js && node --check src/geo.js && node --check src/district.js && node --check src/main.js && node --check tools/make-sample.js && node --check tests/serve.js && node --check tests/smoke.js && node --check tests/logic.test.js && node --check tests/geo.test.js && node --check tools/fetch-osm.js && node --check tests/fetch-osm.test.js && node --check src/crowd.js && node --check tests/crowd.test.js && node --check tests/district.test.js",
+    "test": "npm run lint && node --test tests/logic.test.js tests/geo.test.js tests/fetch-osm.test.js tests/crowd.test.js tests/district.test.js",
     "smoke": "node tests/smoke.js",
     "fetch-osm": "node tools/fetch-osm.js"
   },
