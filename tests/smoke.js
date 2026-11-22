@@ -93,7 +93,11 @@ async function runModelCheck(browser, baseUrl) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const errors = [];
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    if (m.location().url.endsWith('/data/praha.geojson')) return; // očekávané, když reálná data chybí
+    errors.push(m.text());
+  });
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   await page.goto(baseUrl, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__praha && window.__praha.state, null, { timeout: 60000 });
