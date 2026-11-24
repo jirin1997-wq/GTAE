@@ -1,6 +1,6 @@
 // Čistá herní logika (bez Three.js a DOM), testovatelná v Node.js.
 
-export const WORLD = { size: 2400 }; // hranice pohybu: čtverec kolem středu (metry)
+export const WORLD = { size: 4400 }; // hranice pohybu: čtverec kolem středu (metry)
 
 /** Auto: pozice x,z, úhel yaw (0 = směr -z), rychlost. */
 export function createCar(x = 0, z = 0, yaw = 0) {

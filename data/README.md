@@ -11,11 +11,11 @@ což je **syntetická ukázka (není to reálná Praha)** a v HUD je to označen
 ```
 [out:json][timeout:120];
 (
-  way["building"](50.0790,14.4000,50.0960,14.4330);
-  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|service|pedestrian|footway|cycleway|path|steps)$"](50.0790,14.4000,50.0960,14.4330);
-  way["waterway"="river"](50.0790,14.4000,50.0960,14.4330);
-  way["natural"="water"](50.0790,14.4000,50.0960,14.4330);
-  relation["building"]["type"="multipolygon"](50.0790,14.4000,50.0960,14.4330);
+  way["building"](50.0680,14.3800,50.1070,14.4650);
+  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|service|pedestrian|footway|cycleway|path|steps)$"](50.0680,14.3800,50.1070,14.4650);
+  way["waterway"="river"](50.0680,14.3800,50.1070,14.4650);
+  way["natural"="water"](50.0680,14.3800,50.1070,14.4650);
+  relation["building"]["type"="multipolygon"](50.0680,14.3800,50.1070,14.4650);
 );
 out geom;
 ```

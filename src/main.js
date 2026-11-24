@@ -72,7 +72,7 @@ scene.add(new THREE.HemisphereLight(0xfde8d8, 0x4a4256, 0.6));
 
 // ---------- Data ----------
 const params = new URLSearchParams(location.search);
-const radius = Number(params.get('radius')) || 1200;
+const radius = Number(params.get('radius')) || 2000;
 
 async function loadDistrict() {
   const url = params.get('data') || DEFAULT_DATA;

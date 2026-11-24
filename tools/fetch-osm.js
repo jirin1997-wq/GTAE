@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import osmtogeojson from 'osmtogeojson';
 
-export const BBOX = '50.0790,14.4000,50.0960,14.4330'; // jih, západ, sever, východ
+export const BBOX = '50.0680,14.3800,50.1070,14.4650'; // jih, západ, sever, východ
 
 export function overpassQuery(bbox = BBOX) {
   return `[out:json][timeout:90];
