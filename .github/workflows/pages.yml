@@ -28,6 +28,11 @@ jobs:
       - name: Reálná data OSM (když selžou, zůstane ukázková mapa)
         continue-on-error: true
         run: npm run fetch-osm
+      - name: Spojit části dat (data/parts/*.geojson, když existují)
+        run: |
+          if ls data/parts/*.geojson >/dev/null 2>&1; then
+            node tools/merge-geojson.js data/parts/*.geojson --out data/praha.geojson
+          fi
       - name: Připravit web
         run: |
           mkdir -p _site

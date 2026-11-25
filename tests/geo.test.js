@@ -17,6 +17,7 @@ import {
   findSpawn,
   pointAlongPolyline,
   pickupsOnRoads,
+  parseColour,
 } from '../src/geo.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -132,4 +133,36 @@ test('mince leží na silnicích a jsou v okruhu', () => {
   for (const p of pickups) {
     assert.ok(d.roads.some((r) => distanceToPolyline(p, r.points) < 0.01));
   }
+});
+
+test('barvy: hex i názvy z tagů', () => {
+  assert.equal(parseColour('#AABBCC'), '#aabbcc');
+  assert.equal(parseColour('#abc'), '#aabbcc');
+  assert.equal(parseColour('red'), '#b5523b');
+  assert.equal(parseColour('neznámá'), null);
+  assert.equal(parseColour(undefined), null);
+});
+
+test('parseDistrict čte barvu budovy, parky, tramvaj a stromy', () => {
+  const gj = {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: { building: 'yes', 'building:colour': 'beige', height: '20' },
+        geometry: { type: 'Polygon', coordinates: [[[14.4200, 50.0870], [14.4204, 50.0870], [14.4204, 50.0874], [14.4200, 50.0874], [14.4200, 50.0870]]] } },
+      { type: 'Feature', properties: { leisure: 'park' },
+        geometry: { type: 'Polygon', coordinates: [[[14.4180, 50.0860], [14.4190, 50.0860], [14.4190, 50.0865], [14.4180, 50.0865], [14.4180, 50.0860]]] } },
+      { type: 'Feature', properties: { railway: 'tram' },
+        geometry: { type: 'LineString', coordinates: [[14.4150, 50.0870], [14.4250, 50.0870]] } },
+      { type: 'Feature', properties: { natural: 'tree' },
+        geometry: { type: 'Point', coordinates: [14.4205, 50.0872] } },
+      { type: 'Feature', properties: { highway: 'primary', bridge: 'yes' },
+        geometry: { type: 'LineString', coordinates: [[14.4180, 50.0850], [14.4260, 50.0850]] } },
+    ],
+  };
+  const d = parseDistrict(gj, { radius: 900 });
+  assert.equal(d.buildings[0].color, '#d8c9a7');
+  assert.equal(d.green.length, 1);
+  assert.equal(d.tracks.length, 1);
+  assert.equal(d.trees.length, 1);
+  assert.equal(d.roads[0].bridge, true);
 });

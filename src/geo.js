@@ -4,6 +4,8 @@
 // Střed Staroměstského náměstí – výchozí bod světa.
 export const ORIGIN = { lon: 14.4208, lat: 50.0875 };
 
+const GREEN_KINDS = ['grass', 'forest', 'recreation_ground', 'meadow', 'village_green', 'cemetery', 'park', 'garden', 'playground'];
+
 const M_PER_DEG_LAT = 110574;
 
 export function project(lon, lat, origin = ORIGIN) {
@@ -55,6 +57,23 @@ export function distanceToPolyline(p, points) {
   return best;
 }
 
+// Pojmenované barvy z OSM tagů building:colour / roof:colour → hex
+export const COLOUR_NAMES = {
+  white: '#f2f2f0', grey: '#9a9a9a', gray: '#9a9a9a', black: '#2a2a2a',
+  red: '#b5523b', brown: '#8b5a3c', beige: '#d8c9a7', cream: '#efe6cc',
+  yellow: '#e2c46a', orange: '#d9823b', green: '#5f8a5a', blue: '#4f7fb0',
+  pink: '#e0a3a3', ochre: '#c9a050', sandstone: '#d6b98c', tan: '#c8a77a',
+};
+
+/** Převede barvu z tagu (hex nebo název) na hex, jinak null. */
+export function parseColour(value) {
+  if (!value) return null;
+  const v = String(value).trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(v)) return v;
+  if (/^#[0-9a-f]{3}$/.test(v)) return '#' + v.slice(1).split('').map((c) => c + c).join('');
+  return COLOUR_NAMES[v] ?? null;
+}
+
 /** Výška budovy v metrech z OSM tagů. */
 export function buildingHeight(tags = {}) {
   const h = parseFloat(String(tags.height ?? '').replace(/[^\d.]/g, ''));
@@ -100,7 +119,10 @@ function withinRadius(points, radius) {
  * v kruhu o poloměru `radius` kolem `origin`.
  */
 export function parseDistrict(geojson, { origin = ORIGIN, radius = 900 } = {}) {
-  const district = { origin, radius, buildings: [], roads: [], water: [], waterways: [] };
+  const district = {
+    origin, radius, buildings: [], roads: [], water: [], waterways: [],
+    green: [], tracks: [], trees: [],
+  };
 
   for (const f of geojson.features ?? []) {
     const tags = f.properties ?? {};
@@ -111,12 +133,32 @@ export function parseDistrict(geojson, { origin = ORIGIN, radius = 900 } = {}) {
       for (const poly of polygonsOf(g)) {
         const ring = ringToLocal(poly[0], origin);
         if (ring.length < 3 || !withinRadius(ring, radius)) continue;
-        district.buildings.push({ ring, height: buildingHeight(tags) });
+        district.buildings.push({
+          ring,
+          height: buildingHeight(tags),
+          color: parseColour(tags['building:colour'] ?? tags.colour),
+          roofColor: parseColour(tags['roof:colour']),
+          roofShape: tags['roof:shape'] ?? null,
+        });
       }
     } else if (tags.highway && g.type === 'LineString') {
       const points = ringToLocal(g.coordinates, origin);
       if (points.length >= 2 && distanceToPolyline({ x: 0, z: 0 }, points) <= radius) {
-        district.roads.push({ points, width: roadWidth(tags.highway), highway: tags.highway });
+        const bridge = tags.bridge && tags.bridge !== 'no';
+        district.roads.push({ points, width: roadWidth(tags.highway), highway: tags.highway, bridge: Boolean(bridge) });
+      }
+    } else if (tags.railway && ['tram', 'light_rail', 'rail', 'subway'].includes(tags.railway) && g.type === 'LineString') {
+      const points = ringToLocal(g.coordinates, origin);
+      if (points.length >= 2 && distanceToPolyline({ x: 0, z: 0 }, points) <= radius) {
+        district.tracks.push({ points, kind: tags.railway });
+      }
+    } else if (tags.natural === 'tree' && g.type === 'Point') {
+      const p = project(g.coordinates[0], g.coordinates[1], origin);
+      if (Math.hypot(p.x, p.z) <= radius) district.trees.push(p);
+    } else if ((tags.landuse || tags.leisure) && (g.type === 'Polygon' || g.type === 'MultiPolygon') && GREEN_KINDS.includes(tags.landuse ?? tags.leisure)) {
+      for (const poly of polygonsOf(g)) {
+        const ring = ringToLocal(poly[0], origin);
+        if (ring.length >= 3 && withinRadius(ring, radius)) district.green.push({ ring, kind: tags.landuse ?? tags.leisure });
       }
     } else if ((tags.natural === 'water' || tags.water) && (g.type === 'Polygon' || g.type === 'MultiPolygon')) {
       for (const poly of polygonsOf(g)) {
